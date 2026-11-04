@@ -117,7 +117,7 @@ $xml = @"
       <Directory Id="$($profile.Folder)">
         <Directory Id="INSTALLFOLDER" Name="LHa for UNIX">
           <Component Id="Runtime" Guid="$($profile.Component)" Win64="$($profile.Win64)">
-            <Environment Id="SystemPath" Name="PATH" Action="set" Part="last" Value="[INSTALLFOLDER]" System="yes" Permanent="no" />
+
             <File Id="LhaExe" Source="$payloadXml/lha.exe" KeyPath="yes" />
             <File Id="SourceCode" Source="$payloadXml/source.tar.gz" />
             <File Id="Copyright" Source="$payloadXml/COPYRIGHT.txt" />
