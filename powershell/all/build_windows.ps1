@@ -5,7 +5,8 @@ Cross-compiles LHA with MinGW and packages the binary plus complete source in MS
 .DESCRIPTION
 Requires Linux, make, MinGW, wixl and an Autotools-prepared clean source tree.
 Build/output directories must be new. Failed builds retain their logs.
-This creates packages only and does not install them or change system PATH.
+This creates packages only. Installing the MSI appends its directory to system PATH;
+uninstall removes that entry. Existing shells/services must be restarted.
 #>
 [CmdletBinding()]
 param(
@@ -105,10 +106,10 @@ Copy-Item -LiteralPath '/usr/share/doc/mingw-w64-common/copyright' -Destination 
 Copy-Item -LiteralPath '/usr/share/doc/gcc-mingw-w64-base/copyright' -Destination (Join-Path $payload 'GCC-NOTICES.txt')
 $payloadXml = [Security.SecurityElement]::Escape($payload)
 # MSI's third version field is bounded to 65535. Days since 2000 gives this
-# upstream date (2026-07-23) a monotonic value of 9700 without truncating it.
+# upstream date (2026-07-23) a base of 9700; revision 1 adds the PATH change.
 $xml = @"
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="LHa for UNIX $Architecture" Language="1033" Version="1.14.9700" Manufacturer="Disconnected by Peer AT" UpgradeCode="$($profile.Upgrade)">
+  <Product Id="*" Name="LHa for UNIX $Architecture" Language="1033" Version="1.14.9701" Manufacturer="Disconnected by Peer AT" UpgradeCode="$($profile.Upgrade)">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
     <Media Id="1" Cabinet="lha.cab" EmbedCab="yes" />
     <MajorUpgrade DowngradeErrorMessage="A newer LHA package is already installed." />
@@ -116,6 +117,7 @@ $xml = @"
       <Directory Id="$($profile.Folder)">
         <Directory Id="INSTALLFOLDER" Name="LHa for UNIX">
           <Component Id="Runtime" Guid="$($profile.Component)" Win64="$($profile.Win64)">
+            <Environment Id="SystemPath" Name="PATH" Action="set" Part="last" Value="[INSTALLFOLDER]" System="yes" Permanent="no" />
             <File Id="LhaExe" Source="$payloadXml/lha.exe" KeyPath="yes" />
             <File Id="SourceCode" Source="$payloadXml/source.tar.gz" />
             <File Id="Copyright" Source="$payloadXml/COPYRIGHT.txt" />
@@ -133,8 +135,9 @@ $xml = @"
 "@
 $definition = Join-Path $build 'lha.wxs'
 [IO.File]::WriteAllText($definition, $xml)
-$msi = Join-Path $OutputDirectory ('lha-unix-1.14i-ac20260723-windows-' + $Architecture + '.msi')
+$msi = Join-Path $OutputDirectory ('lha-unix-1.14i-ac20260723-2-windows-' + $Architecture + '.msi')
 Invoke-BuildStep msi wixl @('-a', $Architecture, '-o', $msi, $definition)
+& (Join-Path $PSScriptRoot '../../packaging/finalize_msi_path.ps1') -Package $msi -Component Runtime
 [pscustomobject]@{
     Package    = $msi
     Executable = $exe

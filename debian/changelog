@@ -1,3 +1,10 @@
+lha-unix (1.14i.ac20260723-2) unstable; urgency=medium
+
+  * Add an MSI-owned Windows system PATH member and lifecycle/discovery tests.
+  * Retain the existing Debian executable, alternatives and licence behavior.
+
+ -- Disconnected by Peer AT <geos_one@disconnected-by-peer.at>  Wed, 04 Nov 2026 15:00:00 +0100
+
 lha-unix (1.14i.ac20260723-1) unstable; urgency=medium
 
   * Package the current upstream compressor with complete source and notices.

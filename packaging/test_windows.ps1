@@ -9,6 +9,8 @@ $ErrorActionPreference = 'Stop'
 if (!$IsWindows) {
     throw 'This qualification requires Windows.'
 }
+. (Join-Path $PSScriptRoot 'test_windows_path.ps1')
+$before = Get-TestMachinePath
 $programs = if ($Architecture -eq 'x86' -and [Environment]::Is64BitOperatingSystem) {
     [Environment]::GetFolderPath('ProgramFilesX86')
 } else {
@@ -26,12 +28,22 @@ try {
         throw "MSI installation failed: $($process.ExitCode)"
     }
     $installed = $true
+    Assert-TestToolPath -Directory $directory -Before $before
+    Assert-TestToolDiscovery -Executable (Join-Path $directory 'lha.exe') -WorkingDirectory ([IO.Path]::GetTempPath())
     & (Join-Path $PSScriptRoot 'test_roundtrip.ps1') -Executable (Join-Path $directory 'lha.exe')
     foreach ($name in @('COPYRIGHT.txt', 'MINGW-NOTICES.txt', 'GCC-NOTICES.txt', 'source.tar.gz')) {
         if (!(Test-Path -LiteralPath (Join-Path $directory $name))) {
             throw 'The package omitted source or required licence notices.'
         }
     }
+    $exe = Join-Path $directory 'lha.exe'
+    $hash = (Get-FileHash -LiteralPath $exe).Hash
+    Remove-Item -LiteralPath $exe
+    $repair = Start-Process msiexec.exe -ArgumentList ('/fa "' + $packagePath + '" /qn /norestart') -Wait -PassThru
+    if ($repair.ExitCode -notin 0, 3010 -or (Get-FileHash -LiteralPath $exe).Hash -ne $hash) {
+        throw 'MSI repair did not restore the qualified executable.'
+    }
+    Assert-TestToolPath -Directory $directory -Before $before
     $file = [IO.File]::OpenRead((Join-Path $directory 'source.tar.gz'))
     $gzip = [IO.Compression.GZipStream]::new($file, [IO.Compression.CompressionMode]::Decompress)
     $reader = [System.Formats.Tar.TarReader]::new($gzip)
@@ -53,6 +65,7 @@ try {
 } finally {
     if ($installed) {
         $process = Start-Process msiexec.exe -ArgumentList ('/x "' + $packagePath + '" /qn /norestart') -Wait -PassThru
+        Assert-TestToolPath -Directory $directory -Before $before -Removed
         if ($process.ExitCode -notin 0, 3010 -or (Test-Path -LiteralPath (Join-Path $directory 'lha.exe'))) {
             throw 'MSI uninstall did not remove its installed executable.'
         }

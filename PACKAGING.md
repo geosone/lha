@@ -35,7 +35,7 @@ build_windows.ps1 invokes MinGW and wixl on Linux. It requires a fresh build and
 output directory, Autotools-prepared unconfigured source and a matching complete
 source archive. A Debian build followed by make distclean provides those inputs.
 The workflow automates this preparation. Programs are named lha.exe on both
-architectures and installed in Program Files/LHa for UNIX, without PATH edits.
+architectures and installed in Program Files/LHa for UNIX, with an MSI-owned appended system PATH entry.
 The MSI includes source.tar.gz, original licence text and compiler notices.
 
 Example:
@@ -44,8 +44,8 @@ Example:
 ./build_windows.ps1 -Architecture x64 -SourceDirectory /tmp/prepared-source -SourceArchive /tmp/matching-source.tar.gz -BuildDirectory /tmp/lha-build -OutputDirectory /tmp/lha-output
 ```
 
-The MSI version is 1.14.9700: its third field is the upstream date counted in
-days since 2000-01-01. The package has stable architecture-specific component
+The MSI version is 1.14.9701: its third field is the upstream date counted in
+days since 2000-01-01 plus the first packaging revision (9700 + 1). The package has stable architecture-specific component
 and upgrade GUIDs. Windows filename Unicode support is not yet qualified.
 
 ## Actual qualification on 2026-11-04
@@ -64,3 +64,5 @@ these tests must not be described as an already deployed BBS configuration.
 
 GitHub matrix results extend the above evidence only after the corresponding
 jobs pass. A successfully prepared workflow alone does not qualify ARM.
+
+Installing the Windows MSI appends its own directory to machine PATH. Restart existing shells and services to inherit the change. Native tests verify CMD/PowerShell discovery and that uninstall restores the previous PATH. Portable archives do not change PATH.
