@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- --with-default-method=5
+
+# The upstream default suite omits its removed stdin-list feature and optional
+# multi-gigabyte stress tests. Keep that maintained selection, not a guessed list.
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/lha-unix
+	mv debian/lha-unix/usr/bin/lha debian/lha-unix/usr/bin/lha.unix
+	mv debian/lha-unix/usr/share/man/man1/lha.1 debian/lha-unix/usr/share/man/man1/lha.unix.1
+	mkdir -p debian/lha-unix/usr/share/doc/lha-unix
+	tar --exclude='./.git' --exclude='./debian/lha-unix' --exclude='./debian/.debhelper' --exclude='./debian/files' --exclude='*.substvars' --exclude='./.build*' --exclude='./src/lha' --exclude='*.o' --exclude='./src/.deps' -czf debian/lha-unix/usr/share/doc/lha-unix/upstream-source.tar.gz .

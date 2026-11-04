@@ -1,0 +1,25 @@
+Description: Match the symlink helper definition to its existing call-site guard
+ The MinGW target has no POSIX symlink function. Its call site already uses
+ S_IFLNK, but the unconditional unused helper still fails modern GCC checks.
+ The same condition leaves Unix behavior unchanged.
+Author: Disconnected by Peer AT
+Forwarded: no
+
+--- a/src/lhext.c
++++ b/src/lhext.c
+@@ -195,6 +195,7 @@
+ }
+ 
+ /* ------------------------------------------------------------------------ */
++#ifdef S_IFLNK
+ static int
+ symlink_with_make_path(const char *realname, const char *name)
+ {
+@@ -208,6 +209,7 @@
+ 
+     return l_code;
+ }
++#endif
+ 
+ /* ------------------------------------------------------------------------ */
+ static void

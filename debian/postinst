@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+    update-alternatives --install /usr/bin/lha lha /usr/bin/lha.unix 100 --slave /usr/share/man/man1/lha.1.gz lha.1.gz /usr/share/man/man1/lha.unix.1.gz
+fi
+#DEBHELPER#

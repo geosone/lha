@@ -1,0 +1,148 @@
+name: packages
+on:
+  push:
+    branches: [debian]
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - {arch: amd64, platform: linux/amd64}
+          - {arch: arm64, platform: linux/arm64}
+          - {arch: armhf, platform: linux/arm/v7}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build one Bookworm-compatible package per architecture
+        run: |
+          docker buildx build --platform '${{ matrix.target.platform }}' --target build --load -t lha-package:ci -f packaging/Dockerfile.debian .
+          mkdir output
+          docker run --rm --platform '${{ matrix.target.platform }}' --user root -v "$PWD/output:/out" lha-package:ci sh -ec '
+            cp /build/*.deb /out/
+            make -C /build/source distclean > /out/distclean.log
+            tar -czf /out/prepared-source.tar.gz -C /build/source .'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lha-linux-${{ matrix.target.arch }}
+          path: output/*.deb
+      - uses: actions/upload-artifact@v4
+        if: matrix.target.arch == 'amd64'
+        with:
+          name: lha-prepared-source
+          path: output/prepared-source.tar.gz
+  linux-test:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [bookworm, trixie]
+        target:
+          - {arch: amd64, platform: linux/amd64}
+          - {arch: arm64, platform: linux/arm64}
+          - {arch: armhf, platform: linux/arm/v7}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: actions/download-artifact@v4
+        with:
+          name: lha-linux-${{ matrix.target.arch }}
+          path: packages
+      - name: Native package, compressor and alternatives qualification
+        run: |
+          package=$(find packages -name 'lha-unix_*_${{ matrix.target.arch }}.deb')
+          test -n "$package"
+          docker run --rm --platform '${{ matrix.target.platform }}' -e DEBIAN_FRONTEND=noninteractive -v "$PWD/$package:/package.deb:ro" 'debian:${{ matrix.suite }}-slim' sh -ec '
+            apt-get update
+            apt-get install -y --no-install-recommends lhasa
+            original=$(readlink -f /usr/bin/lha)
+            update-alternatives --set lha "$original"
+            apt-get install -y --no-install-recommends /package.deb
+            test "$(readlink -f /usr/bin/lha)" = "$original"
+            work=$(mktemp -d)
+            cd "$work"
+            printf "Native LHA fixture\n" > file_id.diz
+            for extension in lha lzh; do
+              /usr/bin/lha.unix -a -i "round trip.$extension" file_id.diz
+              mkdir "output files"
+              /usr/bin/lha.unix "-efiw=output files" "round trip.$extension" file_id.diz
+              cmp file_id.diz "output files/file_id.diz"
+              rm "output files/file_id.diz"
+              rmdir "output files"
+            done
+            update-alternatives --auto lha
+            test "$(readlink -f /usr/bin/lha)" = /usr/bin/lha.unix
+            apt-get remove -y lha-unix
+            test "$(readlink -f /usr/bin/lha)" = "$original"
+            dpkg-query -W lhasa'
+  windows-build:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: lha-prepared-source
+          path: prepared
+      - run: sudo apt-get update && sudo apt-get install -y mingw-w64 wixl
+      - name: Cross-build native MSI
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory source
+          tar -xzf prepared/prepared-source.tar.gz -C source
+          if ($LASTEXITCODE) { throw 'Prepared source extraction failed.' }
+          ./build_windows.ps1 -Architecture '${{ matrix.arch }}' -SourceDirectory "$PWD/source" -SourceArchive "$PWD/source/debian/lha-unix/usr/share/doc/lha-unix/upstream-source.tar.gz" -BuildDirectory "$PWD/native-build" -OutputDirectory "$PWD/output"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lha-windows-${{ matrix.arch }}
+          path: output/*.msi
+  windows-test:
+    needs: windows-build
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: lha-windows-${{ matrix.arch }}
+          path: packages
+      - name: Install, verify and uninstall MSI
+        shell: pwsh
+        run: |
+          $package = Get-ChildItem packages/*.msi | Select-Object -ExpandProperty FullName
+          ./packaging/test_windows.ps1 -Package $package -Architecture '${{ matrix.arch }}'
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux-build, linux-test, windows-build, windows-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish packages with matching source and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir release
+          find artifacts -type f \( -name '*.deb' -o -name '*.msi' \) -exec cp '{}' release/ \;
+          git archive --format=tar.gz --output=release/lha-unix-source.tar.gz HEAD
+          cd release
+          sha256sum *.deb *.msi *.tar.gz > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "LHa for UNIX $GITHUB_REF_NAME" --generate-notes *.deb *.msi *.tar.gz SHA256SUMS

@@ -1,0 +1,6 @@
+lha-unix (1.14i.ac20260723-1) unstable; urgency=medium
+
+  * Package the current upstream compressor with complete source and notices.
+  * Keep lha.unix coinstallable with Lhasa using update-alternatives.
+
+ -- Disconnected by Peer AT <geos_one@disconnected-by-peer.at>  Wed, 04 Nov 2026 10:00:00 +0100

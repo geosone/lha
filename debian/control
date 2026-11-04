@@ -1,0 +1,20 @@
+Source: lha-unix
+Section: non-free/utils
+Priority: optional
+Maintainer: Disconnected by Peer AT <geos_one@disconnected-by-peer.at>
+Build-Depends: debhelper-compat (= 13), autoconf, automake
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://github.com/jca02266/lha
+Vcs-Git: https://github.com/geosone/lha.git -b debian
+Vcs-Browser: https://github.com/geosone/lha/tree/debian
+
+Package: lha-unix
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Provides: lha
+Description: Native LHA/LZH compressor and decompressor
+ LHa for UNIX provides both archive creation and extraction. This package
+ registers lha.unix through alternatives without overwriting Lhasa files.
+ The original upstream licence applies; this is not a GPL relicensing.
+ Complete matching source and upstream documentation accompany the binary.

@@ -1,0 +1,9 @@
+FROM debian:bookworm-slim AS build
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential debhelper autoconf automake fakeroot ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home builder && install -d -o builder -g builder /build/source && chown builder:builder /build
+WORKDIR /build/source
+COPY --chown=builder:builder . .
+USER builder
+RUN dpkg-buildpackage -b -us -uc
+FROM scratch
+COPY --from=build /build/*.deb /

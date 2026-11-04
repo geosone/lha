@@ -1,0 +1,124 @@
+Upstream: LHa for UNIX, https://github.com/jca02266/lha
+Source revision: 16619b066b189ef289bb8b07b37d1c38d550da99
+
+The original licence is retained, not replaced with GPL. This package belongs
+in non-free. Original source, documentation and matching packaging accompany
+the binary; individual BSD/MIT notices in upstream files remain applicable.
+
+Original redistribution statement (man/lha.n):
+
+再配布について"
+.PP
+以下の条件で、再配布、転載、改変を許可します。
+.IP 1.
+著作権表示を削除しないこと。
+.IP 2.
+配布内容については、
+.RS
+.IP a.
+配布の際に存在する内容(すなわちソースコード、ドキュメント、
+プログラマーへの手引きなど)が再配布されたものの中に必ず存
+在すること。改変されているならば、それを明示したドキュメ
+ントを用意すること。
+.IP b.
+LHa に対する付加価値が付けられて再配布される場合にはそれら
+もできるだけ含めるよう努力すること。また、その際には付加価
+値が付けられていることを明示したドキュメントを用意すること。
+.IP c.
+バイナリのみの配布は許されない。(付加価値のものも含む)
+.RE
+.IP 3.
+最新版の配布に務めること。(義務はない)
+.RS
+.IP 注.
+なお、ネットでの配付は自由であるが、ネットにアクセスできない方（雑誌および、
+CD-ROM などによる）配付は、配付前にこちらに E-Mail をお願いします。
+配付前に出来ない際には、後日必ず E-Mail をお願いします。
+.RE
+.IP 4.
+このプログラムの存在や使用したことによって生じた損害は全く保
+証しない。
+.IP 5.
+作者は、このプログラムに不備があっても、それを訂正する義務を
+負わない。
+.IP 6.
+このプログラムの一部、または全部を他のプログラムに組み込んで
+利用してもかまわない。この場合、そのプログラムは LHa ではなく、
+LHa と名乗ってはいけない。
+.IP 7.
+商利用に関しては、上記の条件に加え、下記の条件のもとにこれを
+認める。
+.RS
+.IP a.
+このプログラムをメインとする商利用は禁止する。
+.IP b.
+商利用の相手がこのプログラムの使用者として不適切と判断し
+た場合には配布しない。
+.IP c.
+インストールの手段として使用する場合、このプログラムを使
+うことを相手に強制しない。この場合、商利用者が作業を行う。
+また、そのときの損害は、商利用者が全責任を負う。
+.IP d.
+商利用を付加価値として行いこのプログラムを使用する場合、
+商利用者は、そのサポートを行う。
+.RE
+.PP
+.SH "
+
+Historical Debian translation, from lha 1.14i-10.3 debian/copyright:
+
+Original Authors License Statement (from man/lha.man, translated by
+Osamu Aoki <debian@aokiconsulting.com>):
+
+   Permission is given for redistribution, copy, and modification provided
+   following conditions are met.
+   
+   1. Do not remove copyright clause.
+   2. Distribution shall conform:
+    a. The content of redistribution (i.e., source code, documentation,
+       and reference guide for programmers) shall include original contents.
+       If contents are modified, the document clearly indicating
+       the fact of modification must be included.
+    b. If LHa is redistributed with added values, you must put your best
+       effort to include them (Translator comment: If read literally,
+       original Japanese was unclear what "them" means here.  But
+       undoubtedly this "them" means source code for the added value
+       portion and this is a typical Japanese sloppy writing style to
+       abbreviate as such)  Also the document clearly indicating that
+       added value was added must be included. 
+    c. Binary only distribution is not allowed (including added value
+       ones.)
+   3. You need to put effort to distribute the latest version (This is not
+      your duty).
+   
+      NB: Distribution on Internet is free.  Please notify me by e-mail or
+      other means prior to the distribution if distribution is done through
+      non-Internet media (Magazine, CDROM etc.)  If not, make sure to Email
+      me later.
+   
+   4. Any damage caused by the existence and use of this program will not
+      be compensated.
+   
+   5. Author will not be responsible to correct errors even if program is
+      defective.
+   
+   6. This program, either as a part of this or as a whole of this, may be
+      included into other programs.  In this case, that program is not LHa
+      and can not call itself LHa.
+   
+   7. For commercial use, in addition to above conditions, following
+      condition needs to be met.
+   
+      a.  The program whose content is mainly this program can not be used
+          commercially.
+      b.  If the recipient of commercial use deems inappropriate as a
+          program user, you must not distribute.
+      c.  If used as a method for the installation, you must not force
+          others to use this program.  In this case, commercial user will
+          perform its work while taking full responsibility of its outcome.
+      d.  If added value is done under the commercial use by using this
+          program, commercial user shall provide its support.
+
+
+
+Complete matching source and per-file notices are in upstream-source.tar.gz.
