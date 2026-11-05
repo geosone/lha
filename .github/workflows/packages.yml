@@ -1,7 +1,7 @@
 name: packages
 on:
   push:
-    branches: [debian]
+    branches: [master, debian]
     tags: ['v*']
   workflow_dispatch:
 permissions:
