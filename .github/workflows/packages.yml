@@ -27,6 +27,8 @@ jobs:
           docker run --rm --platform '${{ matrix.target.platform }}' --user root -v "$PWD/output:/out" lha-package:ci sh -ec '
             cp /build/*.deb /out/
             make -C /build/source distclean > /out/distclean.log
+            # dpkg-buildpackage unapplied the patches; the Windows build needs them.
+            cd /build/source && dpkg-source --before-build .
             tar -czf /out/prepared-source.tar.gz -C /build/source .'
       - uses: actions/upload-artifact@v4
         with:

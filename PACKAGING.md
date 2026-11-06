@@ -58,6 +58,14 @@ call `lha -a -i "%1" "%2"`; on Windows our 1.14i-ac20260723-2 stored the full
 `C:/.../FILE_ID.DIZ` path. Without `i` nothing changes. Release
 1.14i-ac20260723-3 carries the patch.
 
+dpkg-buildpackage unapplies the quilt series after the Debian build, so the
+workflow re-applies it (`dpkg-source --before-build`) before packing the
+prepared source, and `build_windows.ps1` refuses a tree whose applied
+patches differ from the series. Earlier Windows builds, 1.14i-ac20260723-1
+and -2 included, were compiled without the series; their only patch then
+was the MinGW symlink guard, which hosted GCC did not need. Their embedded
+source.tar.gz did contain the patches.
+
 ## Actual qualification on 2026-11-04
 
 Debian amd64: regular upstream suite passed. The same DEB passed LHA/LZH round

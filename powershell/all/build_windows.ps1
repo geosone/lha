@@ -26,6 +26,25 @@ $sourceTar = (Resolve-Path -LiteralPath $SourceArchive).Path
 if (!(Test-Path -LiteralPath (Join-Path $source 'configure')) -or (Test-Path -LiteralPath (Join-Path $source 'config.status'))) {
     throw 'Use autoreconf-prepared, unconfigured source; distclean a previously configured tree.'
 }
+
+# dpkg-buildpackage unapplies the quilt series after the Debian build. The
+# Windows executable must contain the same patches as the DEB, so refuse a
+# tree whose applied patches (quilt's .pc/applied-patches) differ from the
+# series; `dpkg-source --before-build` applies them.
+$series = @(
+    Get-Content -LiteralPath (Join-Path $source 'debian/patches/series') |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -and !$_.StartsWith('#') }
+)
+$appliedList = Join-Path $source '.pc/applied-patches'
+$applied = if (Test-Path -LiteralPath $appliedList) {
+    @(Get-Content -LiteralPath $appliedList | Where-Object { $_.Trim() })
+} else {
+    @()
+}
+if (($series -join "`n") -cne ($applied -join "`n")) {
+    throw 'Apply the Debian patch series to the source first (dpkg-source --before-build).'
+}
 foreach ($path in @($BuildDirectory, $OutputDirectory)) {
     if (![IO.Path]::IsPathFullyQualified($path) -or (Test-Path -LiteralPath $path)) {
         throw 'Build and output directories must be new absolute paths.'
