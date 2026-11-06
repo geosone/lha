@@ -50,8 +50,24 @@ try {
             throw 'LHA -a -i stored a directory path.'
         }
         Remove-Item -LiteralPath $flat -Recurse
+
+        # Mystic packs QWK packets with a quoted "dir/*" that no shell
+        # expands; lha must expand it and store both bare names.
+        $wildcard = Join-Path $work ('wildcard.' + $extension)
+        $pattern = Join-Path $inputDirectory '*'
+        & $Executable -a -i $wildcard $pattern
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Native LHA creation from a wildcard failed.'
+        }
+        $null = New-Item -ItemType Directory $flat
+        & $Executable ("-efw=$flat") $wildcard
+        $names = @(Get-ChildItem -LiteralPath $flat -Recurse | ForEach-Object { $_.Name } | Sort-Object)
+        if ($LASTEXITCODE -ne 0 -or ($names -join '|') -ne 'file_id.diz|release notes.txt') {
+            throw "LHA did not expand the wildcard into bare names: $($names -join '|')"
+        }
+        Remove-Item -LiteralPath $flat -Recurse
     }
-    'PASS LHA and LZH creation/extraction with Mystic flags, spaced paths, bare -i member names and exact content checks'
+    'PASS LHA and LZH creation/extraction with Mystic flags, spaced paths, bare -i member names, wildcard arguments and exact content checks'
 } finally {
     Remove-Item -LiteralPath $work -Recurse -Force
 }

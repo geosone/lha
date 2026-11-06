@@ -1,0 +1,125 @@
+Description: Expand wildcard file arguments when archiving
+ BBS software such as Mystic packs QWK and other packets with
+ lha -a -i archive "dir/*": the quoted pattern is not expanded by the shell,
+ and cmd.exe never expands wildcards on Windows, so lha found no file and
+ created no archive. When archiving, an argument that names no existing file
+ but contains * or ? is now expanded by lha (glob on Unix, _findfirst on
+ Windows). Existing files, including names that contain those characters,
+ and patterns without a match behave as before.
+Author: Disconnected by Peer AT
+Forwarded: no
+
+--- a/src/lharc.c
++++ b/src/lharc.c
+@@ -43,12 +43,18 @@
+ #define LHA_MAIN_SRC
+ 
+ #include "lha.h"
++#if defined(__MINGW32__)
++#include <io.h>
++#elif !defined(__DJGPP__)
++#include <glob.h>
++#endif
+ 
+ static int      cmd = CMD_UNKNOWN;
+ static int error_occurred;
+ 
+ /* static functions */
+ static void     sort_files();
++static void     expand_wildcard_files();
+ static void     print_version();
+ 
+ extern int optional_archive_kanji_code;
+@@ -697,6 +703,8 @@
+         cmd_filev = xfilev;
+     }
+ 
++    if (cmd == CMD_ADD)
++        expand_wildcard_files();
+     sort_files();
+ 
+     /* make crc table */
+@@ -903,6 +911,83 @@
+ }
+ 
+ /* ------------------------------------------------------------------------ */
++/* BBS software such as Mystic runs `lha -a -i archive "dir/*"`: the quoted
++   pattern reaches lha unexpanded, and cmd.exe never expands wildcards. When
++   archiving, an argument that names no existing file but contains `*' or
++   `?' is therefore expanded here, as a shell would. A pattern without a
++   match stays as it is and is reported later as before.                    */
++static void
++add_expanded_file(char ***v, int *c, int *size, char *name)
++{
++    if (*c + 1 >= *size) {
++        *size += 64;
++        *v = (char **) xrealloc(*v, sizeof(char *) * *size);
++    }
++    (*v)[(*c)++] = name;
++}
++
++static void
++expand_wildcard_files()
++{
++    char          **v;
++    int             c = 0;
++    int             size = cmd_filec + 64;
++    int             i;
++    struct stat     stbuf;
++
++    v = (char **) xmalloc(sizeof(char *) * size);
++    for (i = 0; i < cmd_filec; i++) {
++        char *arg = cmd_filev[i];
++        int found = 0;
++
++        if (strpbrk(arg, "*?") && GETSTAT(arg, &stbuf) < 0) {
++#if defined(__MINGW32__)
++            /* _findfirst returns bare names; keep the directory prefix. */
++            struct _finddata_t data;
++            intptr_t handle;
++            size_t dirlen = 0;
++            char *p;
++
++            for (p = arg; *p; p++)
++                if (*p == '/' || *p == '\\' || *p == ':')
++                    dirlen = p - arg + 1;
++            handle = _findfirst(arg, &data);
++            if (handle != -1) {
++                do {
++                    char *name;
++
++                    if (strcmp(data.name, ".") == 0 || strcmp(data.name, "..") == 0)
++                        continue;
++                    name = (char *) xmalloc(dirlen + strlen(data.name) + 1);
++                    memcpy(name, arg, dirlen);
++                    strcpy(name + dirlen, data.name);
++                    add_expanded_file(&v, &c, &size, name);
++                    found++;
++                } while (_findnext(handle, &data) == 0);
++                _findclose(handle);
++            }
++#elif !defined(__DJGPP__)
++            glob_t matches;
++            size_t n;
++
++            if (glob(arg, 0, NULL, &matches) == 0) {
++                for (n = 0; n < matches.gl_pathc; n++) {
++                    add_expanded_file(&v, &c, &size, xstrdup(matches.gl_pathv[n]));
++                    found++;
++                }
++                globfree(&matches);
++            }
++#endif
++        }
++        if (!found)
++            add_expanded_file(&v, &c, &size, arg);
++    }
++    v[c] = NULL;
++    cmd_filec = c;
++    cmd_filev = v;
++}
++
++/* ------------------------------------------------------------------------ */
+ static void
+ sort_files()
+ {

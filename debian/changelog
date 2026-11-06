@@ -1,3 +1,10 @@
+lha-unix (1.14i.ac20260723-4) unstable; urgency=medium
+
+  * Expand wildcard file arguments when archiving; Mystic packs QWK packets
+    with a quoted "dir/*" that neither the shell nor cmd.exe expands.
+
+ -- Disconnected by Peer AT <geos_one@disconnected-by-peer.at>  Fri, 06 Nov 2026 15:00:00 +0100
+
 lha-unix (1.14i.ac20260723-3) unstable; urgency=medium
 
   * Store bare file names when archiving with the i option, as Mystic's

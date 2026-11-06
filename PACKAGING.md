@@ -44,8 +44,8 @@ Example:
 ./build_windows.ps1 -Architecture x64 -SourceDirectory /tmp/prepared-source -SourceArchive /tmp/matching-source.tar.gz -BuildDirectory /tmp/lha-build -OutputDirectory /tmp/lha-output
 ```
 
-The MSI version is 1.14.9702: its third field is the upstream date counted in
-days since 2000-01-01 plus the packaging revision (9700 + 2). The package has stable architecture-specific component
+The MSI version is 1.14.9703: its third field is the upstream date counted in
+days since 2000-01-01 plus the packaging revision (9700 + 3). The package has stable architecture-specific component
 and upgrade GUIDs. Windows filename Unicode support is not yet qualified.
 
 ## Bare names with -i when archiving
@@ -65,6 +65,16 @@ patches differ from the series. Earlier Windows builds, 1.14i-ac20260723-1
 and -2 included, were compiled without the series; their only patch then
 was the MinGW symlink guard, which hosted GCC did not need. Their embedded
 source.tar.gz did contain the patches.
+
+## Wildcard file arguments when archiving
+
+Mystic packs QWK REP packets as `lha -a -i "%1" "%2"` with `%2` a quoted
+`<root>/tempqwk/*`. No shell expands it, and cmd.exe never expands
+wildcards, so 1.14i-ac20260723-3 created no packet on Linux or Windows.
+`debian/patches/expand-add-wildcards.patch` makes lha expand, when
+archiving, an argument that names no existing file but contains `*` or `?`
+(glob on Unix, `_findfirst` on Windows). Existing files and patterns without
+a match behave as before. Release 1.14i-ac20260723-4 carries the patch.
 
 ## Actual qualification on 2026-11-04
 

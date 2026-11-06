@@ -85,6 +85,14 @@ jobs:
               test "$(cd flat && find . -mindepth 1)" = ./file_id.diz
               cmp file_id.diz flat/file_id.diz
               rm -r flat
+              # A quoted wildcard, as Mystic passes it, is expanded by lha.
+              mkdir src flat
+              cp file_id.diz src/FILE_ID.DIZ
+              echo second > src/other.txt
+              /usr/bin/lha.unix -a -i "wildcard.$extension" "$work/src/*"
+              /usr/bin/lha.unix "-efw=flat" "wildcard.$extension"
+              test "$(cd flat && find . -mindepth 1 | sort | paste -sd,)" = ./FILE_ID.DIZ,./other.txt
+              rm -r src flat
             done
             update-alternatives --auto lha
             test "$(readlink -f /usr/bin/lha)" = /usr/bin/lha.unix
