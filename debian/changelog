@@ -1,3 +1,10 @@
+lha-unix (1.14i.ac20260723-3) unstable; urgency=medium
+
+  * Store bare file names when archiving with the i option, as Mystic's
+    "lha -a -i" archive records expect; Windows paths are handled too.
+
+ -- Disconnected by Peer AT <geos_one@disconnected-by-peer.at>  Fri, 06 Nov 2026 12:00:00 +0100
+
 lha-unix (1.14i.ac20260723-2) unstable; urgency=medium
 
   * Add an MSI-owned Windows system PATH member and lifecycle/discovery tests.

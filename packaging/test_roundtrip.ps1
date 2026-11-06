@@ -32,8 +32,26 @@ try {
             throw 'Native LHA extraction failed to restore exact contents.'
         }
         Remove-Item -LiteralPath $output
+
+        # Mystic may pass the absolute path of the file to pack. With -i the
+        # archive must hold the bare name: extracting it without -i must not
+        # create any directory.
+        $absolute = Join-Path $work ('absolute.' + $extension)
+        & $Executable -a -i $absolute $inputFile
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Native LHA creation from an absolute path failed.'
+        }
+        $flat = Join-Path $work 'flat output'
+        $null = New-Item -ItemType Directory $flat
+        & $Executable ("-efw=$flat") $absolute
+        $entries = @(Get-ChildItem -LiteralPath $flat -Recurse)
+        if ($LASTEXITCODE -ne 0 -or $entries.Count -ne 1 -or $entries[0].Name -ne 'file_id.diz' -or
+            ![Linq.Enumerable]::SequenceEqual[byte]($payload, [IO.File]::ReadAllBytes($entries[0].FullName))) {
+            throw 'LHA -a -i stored a directory path.'
+        }
+        Remove-Item -LiteralPath $flat -Recurse
     }
-    'PASS LHA and LZH creation/extraction with Mystic flags, spaced paths and exact content checks'
+    'PASS LHA and LZH creation/extraction with Mystic flags, spaced paths, bare -i member names and exact content checks'
 } finally {
     Remove-Item -LiteralPath $work -Recurse -Force
 }

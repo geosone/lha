@@ -44,9 +44,19 @@ Example:
 ./build_windows.ps1 -Architecture x64 -SourceDirectory /tmp/prepared-source -SourceArchive /tmp/matching-source.tar.gz -BuildDirectory /tmp/lha-build -OutputDirectory /tmp/lha-output
 ```
 
-The MSI version is 1.14.9701: its third field is the upstream date counted in
-days since 2000-01-01 plus the first packaging revision (9700 + 1). The package has stable architecture-specific component
+The MSI version is 1.14.9702: its third field is the upstream date counted in
+days since 2000-01-01 plus the packaging revision (9700 + 2). The package has stable architecture-specific component
 and upgrade GUIDs. Windows filename Unicode support is not yet qualified.
+
+## Bare names with -i when archiving
+
+`debian/patches/add-ignore-directory.patch` extends the `i` option (ignore
+directory path) from extraction to a/u/c: only the last path element is
+stored, and on Windows a backslash or drive prefix also ends an element.
+Directory entries are not stored, their files are. Mystic's archive records
+call `lha -a -i "%1" "%2"`; on Windows our 1.14i-ac20260723-2 stored the full
+`C:/.../FILE_ID.DIZ` path. Without `i` nothing changes. Release
+1.14i-ac20260723-3 carries the patch.
 
 ## Actual qualification on 2026-11-04
 

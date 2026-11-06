@@ -106,10 +106,11 @@ Copy-Item -LiteralPath '/usr/share/doc/mingw-w64-common/copyright' -Destination 
 Copy-Item -LiteralPath '/usr/share/doc/gcc-mingw-w64-base/copyright' -Destination (Join-Path $payload 'GCC-NOTICES.txt')
 $payloadXml = [Security.SecurityElement]::Escape($payload)
 # MSI's third version field is bounded to 65535. Days since 2000 gives this
-# upstream date (2026-07-23) a base of 9700; revision 1 adds the PATH change.
+# upstream date (2026-07-23) a base of 9700; revision 1 adds the PATH change,
+# revision 2 the bare file names of the i option when archiving.
 $xml = @"
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="LHa for UNIX $Architecture" Language="1033" Version="1.14.9701" Manufacturer="Disconnected by Peer AT" UpgradeCode="$($profile.Upgrade)">
+  <Product Id="*" Name="LHa for UNIX $Architecture" Language="1033" Version="1.14.9702" Manufacturer="Disconnected by Peer AT" UpgradeCode="$($profile.Upgrade)">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
     <Media Id="1" Cabinet="lha.cab" EmbedCab="yes" />
     <MajorUpgrade DowngradeErrorMessage="A newer LHA package is already installed." />
@@ -135,7 +136,7 @@ $xml = @"
 "@
 $definition = Join-Path $build 'lha.wxs'
 [IO.File]::WriteAllText($definition, $xml)
-$msi = Join-Path $OutputDirectory ('lha-unix-1.14i-ac20260723-2-windows-' + $Architecture + '.msi')
+$msi = Join-Path $OutputDirectory ('lha-unix-1.14i-ac20260723-3-windows-' + $Architecture + '.msi')
 Invoke-BuildStep msi wixl @('-a', $Architecture, '-o', $msi, $definition)
 & (Join-Path $PSScriptRoot '../../packaging/finalize_msi_path.ps1') -Package $msi -Component Runtime
 [pscustomobject]@{

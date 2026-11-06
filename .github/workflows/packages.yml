@@ -76,6 +76,13 @@ jobs:
               cmp file_id.diz "output files/file_id.diz"
               rm "output files/file_id.diz"
               rmdir "output files"
+              # -i stores the bare name of an absolute path.
+              /usr/bin/lha.unix -a -i "absolute.$extension" "$work/file_id.diz"
+              mkdir flat
+              /usr/bin/lha.unix "-efw=flat" "absolute.$extension"
+              test "$(cd flat && find . -mindepth 1)" = ./file_id.diz
+              cmp file_id.diz flat/file_id.diz
+              rm -r flat
             done
             update-alternatives --auto lha
             test "$(readlink -f /usr/bin/lha)" = /usr/bin/lha.unix

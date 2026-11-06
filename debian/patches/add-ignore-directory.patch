@@ -1,0 +1,94 @@
+Description: Store bare file names when archiving with the i option
+ The i option (ignore directory path) only applied to extraction. BBS
+ software such as Mystic calls "lha -a -i archive /full/path/FILE_ID.DIZ"
+ and expects the archive to hold FILE_ID.DIZ, as with zip -j or arj -e.
+ With i, a/u/c now store only the last path element; on Windows and DOS a
+ backslash or drive prefix also ends a path element. Directory entries are
+ not stored, their files are. Without i nothing changes.
+Author: Disconnected by Peer AT
+Forwarded: no
+
+diff --git a/man/lha.1 b/man/lha.1
+index b395123..798656f 100644
+--- a/man/lha.1
++++ b/man/lha.1
+@@ -247,6 +247,7 @@ When archiving, specified files are removed from the disk.
+ .TP
+ \fB\-i\fR
+ When extracting, ignore the directory path. extracting file is put flatten on the current directory.
++When archiving, store only the file name without its directory path; directory entries themselves are not stored, their files are.
+ 
+ .TP
+ \fB\-z\fR
+diff --git a/src/lhadd.c b/src/lhadd.c
+index 790dd42..c4967db 100644
+--- a/src/lhadd.c
++++ b/src/lhadd.c
+@@ -97,6 +97,28 @@ add_one(FILE *fp, FILE *nafp, LzHeader *hdr)
+     fseeko(nafp, next_pos, SEEK_SET);
+ }
+ 
++/* ------------------------------------------------------------------------ */
++/* With `i' (ignore directory path), a/u/c store only the last path element,
++   as x/e already extract without directories. On Windows and DOS the file
++   argument may also use backslashes and a drive prefix.                    */
++static void
++strip_directory(char *name)
++{
++    char *base = name;
++    char *p;
++
++    for (p = name; *p; p++) {
++        if (*p == '/')
++            base = p + 1;
++#if defined(__MINGW32__) || defined(__DJGPP__)
++        if (*p == '\\' || *p == ':')
++            base = p + 1;
++#endif
++    }
++    if (base != name)
++        memmove(name, base, strlen(base) + 1);
++}
++
+ FILE           *
+ append_it(char *name, FILE *oafp, FILE *nafp)
+ {
+@@ -119,6 +141,16 @@ append_it(char *name, FILE *oafp, FILE *nafp)
+     directory = is_directory(&stbuf);
+     symlink = is_symlink(&stbuf);
+ 
++    if (directory && ignore_directory) {
++        /* Without paths a directory entry has no meaning; add its files. */
++        if (recursive_archiving && find_files(name, &filec, &filev)) {
++            for (i = 0; i < filec; i++)
++                oafp = append_it(filev[i], oafp, nafp);
++            free_files(filec, filev);
++        }
++        return oafp;
++    }
++
+     fp = NULL;
+     if (!directory && !symlink && !noexec) {
+         fp = fopen(name, READ_BINARY);
+@@ -129,6 +161,8 @@ append_it(char *name, FILE *oafp, FILE *nafp)
+     }
+ 
+     init_header(name, &stbuf, &hdr);
++    if (ignore_directory)
++        strip_directory(hdr.name);
+ 
+     cmp = 0;                    /* avoid compiler warnings `uninitialized' */
+     while (oafp) {
+diff --git a/src/lharc.c b/src/lharc.c
+index 1e61da1..4df14b7 100644
+--- a/src/lharc.c
++++ b/src/lharc.c
+@@ -189,7 +189,7 @@ commands:                           options:\n\
+ #endif
+     fprintf(stdout, "\
+  c   re-Construct new archive        d  delete FILES after (a/u/c)\n\
+- p   Print to STDOUT from archive    i  ignore directory path (x/e)\n\
++ p   Print to STDOUT from archive    i  ignore directory path\n\
+  t   Test file CRC in archive        z  files not compress (a/u/c)\n\
+                                      g  Generic format (for compatibility)\n\
+                                      0/1/2 header level (a/u/c)\n\
