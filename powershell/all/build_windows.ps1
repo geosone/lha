@@ -130,7 +130,7 @@ $payloadXml = [Security.SecurityElement]::Escape($payload)
 # the wildcard expansion of file arguments when archiving.
 $xml = @"
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="LHa for UNIX $Architecture" Language="1033" Version="1.14.9703" Manufacturer="Disconnected by Peer AT" UpgradeCode="$($profile.Upgrade)">
+  <Product Id="*" Name="LHa for UNIX $Architecture" Language="1033" Version="1.14.9704" Manufacturer="Disconnected by Peer AT" UpgradeCode="$($profile.Upgrade)">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
     <Media Id="1" Cabinet="lha.cab" EmbedCab="yes" />
     <MajorUpgrade DowngradeErrorMessage="A newer LHA package is already installed." />
@@ -156,7 +156,7 @@ $xml = @"
 "@
 $definition = Join-Path $build 'lha.wxs'
 [IO.File]::WriteAllText($definition, $xml)
-$msi = Join-Path $OutputDirectory ('lha-unix-1.14i-ac20260723-4-windows-' + $Architecture + '.msi')
+$msi = Join-Path $OutputDirectory ('lha-unix-1.14i-ac20260723-5-windows-' + $Architecture + '.msi')
 Invoke-BuildStep msi wixl @('-a', $Architecture, '-o', $msi, $definition)
 & (Join-Path $PSScriptRoot '../../packaging/finalize_msi_path.ps1') -Package $msi -Component Runtime
 [pscustomobject]@{

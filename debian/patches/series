@@ -1,3 +1,4 @@
 mingw-symlink-helper.patch
 add-ignore-directory.patch
 expand-add-wildcards.patch
+windows-replace-ignore-case.patch

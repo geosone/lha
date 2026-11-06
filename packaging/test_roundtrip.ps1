@@ -66,8 +66,40 @@ try {
             throw "LHA did not expand the wildcard into bare names: $($names -join '|')"
         }
         Remove-Item -LiteralPath $flat -Recurse
+
+        # Mystic's "Update DIZ" adds a lower-case file_id.diz to an archive
+        # that usually holds FILE_ID.DIZ. Windows names ignore case, so the
+        # member is replaced there; other systems keep both names.
+        $diz = Join-Path $work ('diz.' + $extension)
+        $old = Join-Path $work 'old'
+        $new = Join-Path $work 'new'
+        $null = New-Item -ItemType Directory -Force $old, $new
+        [IO.File]::WriteAllText((Join-Path $old 'FILE_ID.DIZ'), "old`r`n")
+        [IO.File]::WriteAllText((Join-Path $new 'file_id.diz'), "new`r`n")
+        foreach ($file in (Join-Path $old 'FILE_ID.DIZ'), (Join-Path $new 'file_id.diz')) {
+            & $Executable -a -i $diz $file
+            if ($LASTEXITCODE -ne 0) {
+                throw "LHA could not add $file."
+            }
+        }
+        $null = New-Item -ItemType Directory $flat
+        & $Executable ("-efw=$flat") $diz
+        [string[]]$names = @(Get-ChildItem -LiteralPath $flat | ForEach-Object { $_.Name })
+        [Array]::Sort($names, [StringComparer]::Ordinal)
+        $expected = if ($IsWindows) {
+            'file_id.diz'
+        } else {
+            'FILE_ID.DIZ|file_id.diz'
+        }
+        if ($LASTEXITCODE -ne 0 -or ($names -join '|') -cne $expected) {
+            throw "Adding file_id.diz left the members $($names -join '|')."
+        }
+        if ($IsWindows -and [IO.File]::ReadAllText((Join-Path $flat 'file_id.diz')) -ne "new`r`n") {
+            throw 'The replaced FILE_ID.DIZ member does not hold the new content.'
+        }
+        Remove-Item -LiteralPath $flat -Recurse
     }
-    'PASS LHA and LZH creation/extraction with Mystic flags, spaced paths, bare -i member names, wildcard arguments and exact content checks'
+    'PASS LHA and LZH creation/extraction with Mystic flags, spaced paths, bare -i member names, wildcard arguments, case-insensitive member replacement on Windows and exact content checks'
 } finally {
     Remove-Item -LiteralPath $work -Recurse -Force
 }

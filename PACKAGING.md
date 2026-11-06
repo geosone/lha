@@ -44,8 +44,8 @@ Example:
 ./build_windows.ps1 -Architecture x64 -SourceDirectory /tmp/prepared-source -SourceArchive /tmp/matching-source.tar.gz -BuildDirectory /tmp/lha-build -OutputDirectory /tmp/lha-output
 ```
 
-The MSI version is 1.14.9703: its third field is the upstream date counted in
-days since 2000-01-01 plus the packaging revision (9700 + 3). The package has stable architecture-specific component
+The MSI version is 1.14.9704: its third field is the upstream date counted in
+days since 2000-01-01 plus the packaging revision (9700 + 4). The package has stable architecture-specific component
 and upgrade GUIDs. Windows filename Unicode support is not yet qualified.
 
 ## Bare names with -i when archiving
@@ -75,6 +75,17 @@ wildcards, so 1.14i-ac20260723-3 created no packet on Linux or Windows.
 archiving, an argument that names no existing file but contains `*` or `?`
 (glob on Unix, `_findfirst` on Windows). Existing files and patterns without
 a match behave as before. Release 1.14i-ac20260723-4 carries the patch.
+
+## Member names on Windows
+
+Windows file names ignore case, but lha compared member names exactly when
+adding. Mystic's "Update DIZ" writes a lower-case `file_id.diz` and adds it
+with `lha -a -i`; an archive holding `FILE_ID.DIZ` then kept the old
+description next to the new one, and both extract onto the same file.
+`debian/patches/windows-replace-ignore-case.patch` makes the MinGW build
+compare and sort member names without case when archiving, so the member is
+replaced, as zip, arj and 7-Zip behave on Windows. Other systems keep the
+exact comparison. Release 1.14i-ac20260723-5 carries the patch.
 
 ## Actual qualification on 2026-11-04
 

@@ -1,0 +1,66 @@
+Description: Replace members that differ only in case on Windows
+ Windows file names ignore case, but lha compared member names exactly when
+ adding. Adding file_id.diz to an archive holding FILE_ID.DIZ stored a second
+ member that extracts onto the same file. Mystic's "Update DIZ" writes a
+ lower-case file_id.diz and adds it with "lha -a -i", so every update left
+ the old description in the archive. The MinGW build now compares and sorts
+ member names without case when archiving, as zip, arj and 7-Zip do on
+ Windows. Other systems keep the exact comparison.
+Author: Disconnected by Peer AT
+Forwarded: no
+
+--- a/src/lhadd.c
++++ b/src/lhadd.c
+@@ -119,6 +119,28 @@
+         memmove(name, base, strlen(base) + 1);
+ }
+ 
++/* ------------------------------------------------------------------------ */
++/* Windows file names ignore case. Adding "file_id.diz" to an archive that
++   holds "FILE_ID.DIZ" must replace that member, as zip, arj and 7-Zip do on
++   Windows, instead of storing a second one that extracts onto the same
++   file; Mystic's "Update DIZ" adds a lower-case file_id.diz. The order
++   matches sort_by_ascii() in lharc.c. Other systems compare exactly.      */
++static int
++compare_member_names(const char *a, const char *b)
++{
++#ifdef __MINGW32__
++    int c1, c2;
++
++    do {
++        c1 = toupper(*(const unsigned char *) a++);
++        c2 = toupper(*(const unsigned char *) b++);
++    } while (c1 == c2 && c1 != '\0');
++    return c1 - c2;
++#else
++    return strcmp(a, b);
++#endif
++}
++
+ FILE           *
+ append_it(char *name, FILE *oafp, FILE *nafp)
+ {
+@@ -185,7 +207,7 @@
+             continue;
+         }
+ 
+-        cmp = strcmp(ahdr.name, hdr.name);
++        cmp = compare_member_names(ahdr.name, hdr.name);
+         if (cmp < 0) {          /* SKIP */
+             /* copy old to new */
+             if (!noexec) {
+--- a/src/lharc.c
++++ b/src/lharc.c
+@@ -889,7 +889,12 @@
+     register int    c1, c2;
+ 
+     p = *pa, q = *pb;
++#ifdef __MINGW32__
++    /* Windows names ignore case; see compare_member_names() in lhadd.c. */
++    if (1) {
++#else
+     if (generic_format) {
++#endif
+         do {
+             c1 = *(unsigned char *) p++;
+             c2 = *(unsigned char *) q++;
