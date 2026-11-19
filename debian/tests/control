@@ -1,0 +1,2 @@
+Tests: roundtrip
+Depends: lha-unix, diffutils

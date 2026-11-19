@@ -1,0 +1,35 @@
+#!/bin/sh
+# Installed-package probe: the lha alternative points at lha.unix and
+# archives, lists, tests and extracts a small tree with the stored (lh0)
+# and the compressing methods BBS archives use (lh5, lh6, lh7).
+set -eu
+
+work="${AUTOPKGTEST_TMP:-$(mktemp -d)}"
+cd "$work"
+
+if [ "$(readlink -f /usr/bin/lha)" != /usr/bin/lha.unix ]; then
+    echo 'FAIL /usr/bin/lha does not resolve to lha.unix' >&2
+    exit 1
+fi
+
+mkdir -p src/sub
+printf 'Mystic BBS lha probe\n' > src/readme.txt
+seq 1 20000 > src/sub/numbers.txt
+head -c 65536 /dev/urandom > src/sub/random.bin
+
+for method in z o5 o6 o7; do
+    archive="probe-$method.lzh"
+    (cd src && lha "c$method" "../$archive" readme.txt sub/numbers.txt sub/random.bin)
+    lha v "$archive" > "list-$method.txt"
+    grep -q 'sub/numbers.txt' "list-$method.txt"
+    lha tq "$archive"
+    mkdir "out-$method"
+    lha "xqw=out-$method" "$archive"
+    diff -r src "out-$method"
+done
+
+for pair in z:lh0 o5:lh5 o6:lh6 o7:lh7; do
+    grep -q "${pair#*:}" "list-${pair%%:*}.txt"
+done
+
+echo 'PASS lha lh0/lh5/lh6/lh7 create, list, test and extract'
